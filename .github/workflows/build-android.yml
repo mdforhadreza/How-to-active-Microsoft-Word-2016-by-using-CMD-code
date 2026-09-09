@@ -22,6 +22,17 @@ jobs:
           unzip -q my-love-android.zip -d build-src
           test -f build-src/my-love-android/app/src/main/java/com/forhad/mylove/AppPrefs.java
           grep -q "https://my-love-relay.onrender.com" build-src/my-love-android/app/src/main/java/com/forhad/mylove/AppPrefs.java
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("build-src/my-love-android/app/src/main/java/com/forhad/mylove/SetupActivity.java")
+          text = path.read_text()
+          old = "Home Phone — send my notifications"
+          new = "Home Phone — send my loves"
+          if old not in text:
+              raise SystemExit("Expected Home Phone label not found")
+          path.write_text(text.replace(old, new))
+          PY
+          grep -q "Home Phone — send my loves" build-src/my-love-android/app/src/main/java/com/forhad/mylove/SetupActivity.java
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
