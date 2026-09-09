@@ -1,0 +1,52 @@
+name: Build My Love Android APK
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "android-source.part*"
+      - ".github/workflows/build-android.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Rebuild Android source package
+        run: |
+          cat android-source.part0 android-source.part1 android-source.part2 > android-source.full.b64
+          base64 -d android-source.full.b64 > my-love-android.zip
+          unzip -q my-love-android.zip -d build-src
+          test -f build-src/my-love-android/app/src/main/java/com/forhad/mylove/AppPrefs.java
+          grep -q "https://my-love-relay.onrender.com" build-src/my-love-android/app/src/main/java/com/forhad/mylove/AppPrefs.java
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK 35
+        run: yes | sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Build debug APK
+        working-directory: build-src/my-love-android
+        run: gradle --no-daemon assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: My-Love-APK
+          path: build-src/my-love-android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
