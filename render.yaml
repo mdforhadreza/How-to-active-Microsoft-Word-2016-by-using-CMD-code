@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: my-love-relay
+    runtime: node
+    rootDir: my-love-relay
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
