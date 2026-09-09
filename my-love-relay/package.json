@@ -1,0 +1,13 @@
+{
+  "name": "my-love-relay",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Opaque encrypted notification relay for the My Love Android app",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
