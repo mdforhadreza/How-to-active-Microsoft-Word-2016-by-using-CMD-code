@@ -30,12 +30,17 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        getWindow().setStatusBarColor(Color.rgb(18, 20, 23));
-        getWindow().setNavigationBarColor(Color.rgb(18, 20, 23));
+        getWindow().setStatusBarColor(Color.WHITE);
+        getWindow().setNavigationBarColor(Color.WHITE);
+        int uiFlags = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            uiFlags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+        }
+        getWindow().getDecorView().setSystemUiVisibility(uiFlags);
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(Color.rgb(244, 246, 248));
+        root.setBackgroundColor(Color.rgb(245, 246, 248));
 
         root.setOnApplyWindowInsetsListener((v, insets) -> {
             int top;
@@ -61,7 +66,8 @@ public class MainActivity extends Activity {
         ));
 
         webView = new WebView(this);
-        webView.setBackgroundColor(Color.rgb(244, 246, 248));
+        webView.setBackgroundColor(Color.rgb(245, 246, 248));
+        webView.setVerticalScrollBarEnabled(false);
         root.addView(webView, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 0,
@@ -89,7 +95,7 @@ public class MainActivity extends Activity {
         settings.setAllowContentAccess(true);
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
-        settings.setUserAgentString(settings.getUserAgentString() + " MFRPublisherAndroid/1.1");
+        settings.setUserAgentString(settings.getUserAgentString() + " MFRPublisherAndroid/1.2");
 
         CookieManager cookieManager = CookieManager.getInstance();
         cookieManager.setAcceptCookie(true);
@@ -104,6 +110,20 @@ public class MainActivity extends Activity {
                     return true;
                 }
                 return false;
+            }
+
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                String cleanup =
+                        "(function(){"
+                      + "document.documentElement.style.setProperty('margin-top','0px','important');"
+                      + "document.body&&document.body.style.setProperty('margin-top','0px','important');"
+                      + "var a=document.getElementById('wpadminbar');if(a){a.remove();}"
+                      + "if(document.body){var n=[].slice.call(document.body.childNodes);"
+                      + "n.forEach(function(x){if(x.nodeType===3&&/^\\s*(\\\\n\\s*)+$/.test(x.nodeValue||'')){x.remove();}});}"
+                      + "})();";
+                view.evaluateJavascript(cleanup, null);
             }
         });
 
