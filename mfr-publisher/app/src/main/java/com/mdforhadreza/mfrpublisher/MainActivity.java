@@ -19,7 +19,7 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 
 public class MainActivity extends Activity {
-    private static final String PUBLISHER_URL = "https://mdforhadreza.com/mfr-publisher/?app=1.3";
+    private static final String PUBLISHER_URL = "https://mdforhadreza.com/mfr-publisher/?app=1.4";
     private static final int FILE_CHOOSER_REQUEST = 7301;
 
     private WebView webView;
@@ -97,7 +97,7 @@ public class MainActivity extends Activity {
         settings.setAllowContentAccess(true);
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
-        settings.setUserAgentString(settings.getUserAgentString() + " MFRPublisherAndroid/1.3");
+        settings.setUserAgentString(settings.getUserAgentString() + " MFRPublisherAndroid/1.4");
 
         CookieManager cookieManager = CookieManager.getInstance();
         cookieManager.setAcceptCookie(true);
