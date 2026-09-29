@@ -3,9 +3,12 @@ package com.mdforhadreza.mfrpublisher;
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.Insets;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
+import android.view.WindowInsets;
 import android.webkit.CookieManager;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
@@ -27,19 +30,38 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        getWindow().setStatusBarColor(Color.rgb(18, 20, 23));
+        getWindow().setNavigationBarColor(Color.rgb(18, 20, 23));
+
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(Color.WHITE);
+        root.setBackgroundColor(Color.rgb(244, 246, 248));
+
+        root.setOnApplyWindowInsetsListener((v, insets) -> {
+            int top;
+            int bottom;
+            if (Build.VERSION.SDK_INT >= 30) {
+                Insets bars = insets.getInsets(WindowInsets.Type.systemBars());
+                top = bars.top;
+                bottom = bars.bottom;
+            } else {
+                top = insets.getSystemWindowInsetTop();
+                bottom = insets.getSystemWindowInsetBottom();
+            }
+            v.setPadding(0, top, 0, bottom);
+            return insets;
+        });
 
         progressBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
         progressBar.setMax(100);
         progressBar.setVisibility(View.GONE);
         root.addView(progressBar, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                dp(3)
+                dp(2)
         ));
 
         webView = new WebView(this);
+        webView.setBackgroundColor(Color.rgb(244, 246, 248));
         root.addView(webView, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 0,
@@ -47,6 +69,7 @@ public class MainActivity extends Activity {
         ));
 
         setContentView(root);
+        root.requestApplyInsets();
         configureWebView();
 
         if (savedInstanceState == null) {
@@ -66,7 +89,7 @@ public class MainActivity extends Activity {
         settings.setAllowContentAccess(true);
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
-        settings.setUserAgentString(settings.getUserAgentString() + " MFRPublisherAndroid/1.0");
+        settings.setUserAgentString(settings.getUserAgentString() + " MFRPublisherAndroid/1.1");
 
         CookieManager cookieManager = CookieManager.getInstance();
         cookieManager.setAcceptCookie(true);
@@ -105,6 +128,7 @@ public class MainActivity extends Activity {
                 Intent intent;
                 try {
                     intent = fileChooserParams.createIntent();
+                    intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
                 } catch (Exception e) {
                     intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
                     intent.addCategory(Intent.CATEGORY_OPENABLE);
