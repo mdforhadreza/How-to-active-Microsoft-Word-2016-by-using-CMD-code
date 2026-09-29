@@ -19,7 +19,7 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 
 public class MainActivity extends Activity {
-    private static final String PUBLISHER_URL = "https://mdforhadreza.com/mfr-publisher/";
+    private static final String PUBLISHER_URL = "https://mdforhadreza.com/mfr-publisher/?app=1.3";
     private static final int FILE_CHOOSER_REQUEST = 7301;
 
     private WebView webView;
@@ -40,7 +40,7 @@ public class MainActivity extends Activity {
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(Color.rgb(245, 246, 248));
+        root.setBackgroundColor(Color.rgb(242, 241, 237));
 
         root.setOnApplyWindowInsetsListener((v, insets) -> {
             int top;
@@ -66,8 +66,9 @@ public class MainActivity extends Activity {
         ));
 
         webView = new WebView(this);
-        webView.setBackgroundColor(Color.rgb(245, 246, 248));
+        webView.setBackgroundColor(Color.rgb(242, 241, 237));
         webView.setVerticalScrollBarEnabled(false);
+        webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
         root.addView(webView, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 0,
@@ -79,6 +80,7 @@ public class MainActivity extends Activity {
         configureWebView();
 
         if (savedInstanceState == null) {
+            webView.clearCache(true);
             webView.loadUrl(PUBLISHER_URL);
         } else {
             webView.restoreState(savedInstanceState);
@@ -95,7 +97,7 @@ public class MainActivity extends Activity {
         settings.setAllowContentAccess(true);
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
-        settings.setUserAgentString(settings.getUserAgentString() + " MFRPublisherAndroid/1.2");
+        settings.setUserAgentString(settings.getUserAgentString() + " MFRPublisherAndroid/1.3");
 
         CookieManager cookieManager = CookieManager.getInstance();
         cookieManager.setAcceptCookie(true);
@@ -140,9 +142,7 @@ public class MainActivity extends Activity {
                     ValueCallback<Uri[]> filePathCallbackParam,
                     FileChooserParams fileChooserParams
             ) {
-                if (filePathCallback != null) {
-                    filePathCallback.onReceiveValue(null);
-                }
+                if (filePathCallback != null) filePathCallback.onReceiveValue(null);
                 filePathCallback = filePathCallbackParam;
 
                 Intent intent;
@@ -180,9 +180,7 @@ public class MainActivity extends Activity {
             if (data.getClipData() != null) {
                 int count = data.getClipData().getItemCount();
                 result = new Uri[count];
-                for (int i = 0; i < count; i++) {
-                    result[i] = data.getClipData().getItemAt(i).getUri();
-                }
+                for (int i = 0; i < count; i++) result[i] = data.getClipData().getItemAt(i).getUri();
             } else if (data.getData() != null) {
                 result = new Uri[]{data.getData()};
             }
@@ -194,11 +192,8 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        if (webView != null && webView.canGoBack()) {
-            webView.goBack();
-        } else {
-            super.onBackPressed();
-        }
+        if (webView != null && webView.canGoBack()) webView.goBack();
+        else super.onBackPressed();
     }
 
     @Override
@@ -214,7 +209,6 @@ public class MainActivity extends Activity {
     }
 
     private int dp(int value) {
-        float density = getResources().getDisplayMetrics().density;
-        return Math.round(value * density);
+        return Math.round(value * getResources().getDisplayMetrics().density);
     }
 }
