@@ -25,12 +25,12 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 
 public class MainActivity extends Activity {
-    private static final String PUBLISHER_URL = "https://mdforhadreza.com/mfr-publisher/?app=2.1";
+    private static final String PUBLISHER_URL = "https://mdforhadreza.com/mfr-publisher/?app=2.2";
     private static final int FILE_CHOOSER_REQUEST = 7301;
-    private static final String MOBILE_UA_SUFFIX = " MFRPublisherAndroid/2.1";
+    private static final String MOBILE_UA_SUFFIX = " MFRPublisherAndroid/2.2";
     private static final String DESKTOP_UA =
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-            "(KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 MFRPublisherAndroid/2.1";
+            "(KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 MFRPublisherAndroid/2.2";
 
     private WebView webView;
     private ProgressBar progressBar;
