@@ -34,20 +34,38 @@ jobs:
           yes | "$SDKMANAGER" --licenses >/dev/null || true
           "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
+      - name: Restore stable signing key
+        id: signing-cache
+        uses: actions/cache@v4
+        with:
+          path: mfr-publisher/.signing/mfr-internal.jks
+          key: mfr-publisher-signing-v1
+
+      - name: Create stable internal signing key
+        if: steps.signing-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p .signing
+          keytool -genkeypair -v             -keystore .signing/mfr-internal.jks             -storepass mfr-publisher-internal             -keypass mfr-publisher-internal             -alias mfrpublisher             -keyalg RSA -keysize 2048 -validity 10000             -dname "CN=MFR Publisher Internal, OU=Mobile, O=Md Forhad Reza, L=Sydney, ST=NSW, C=AU"
+
       - name: Set up Gradle 8.7
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
 
-      - name: Build debug APK
+      - name: Build signed debug APK
         run: gradle --no-daemon assembleDebug
 
+      - name: Verify APK signature
+        run: |
+          APKSIGNER="$ANDROID_SDK_ROOT/build-tools/35.0.0/apksigner"
+          "$APKSIGNER" verify --verbose app/build/outputs/apk/debug/app-debug.apk
+
       - name: Copy named APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk MFR-Publisher.apk
+        run: cp app/build/outputs/apk/debug/app-debug.apk MFR-Publisher-v2.0.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: MFR-Publisher-APK
-          path: mfr-publisher/MFR-Publisher.apk
+          name: MFR-Publisher-v2.0-APK
+          path: mfr-publisher/MFR-Publisher-v2.0.apk
           if-no-files-found: error
