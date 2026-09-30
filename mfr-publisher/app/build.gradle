@@ -6,6 +6,15 @@ android {
     namespace 'com.mdforhadreza.mfrpublisher'
     compileSdk 35
 
+    signingConfigs {
+        mfrInternal {
+            storeFile file('../.signing/mfr-internal.jks')
+            storePassword 'mfr-publisher-internal'
+            keyAlias 'mfrpublisher'
+            keyPassword 'mfr-publisher-internal'
+        }
+    }
+
     defaultConfig {
         applicationId 'com.mdforhadreza.mfrpublisher'
         minSdk 26
@@ -17,9 +26,11 @@ android {
     buildTypes {
         debug {
             debuggable true
+            signingConfig signingConfigs.mfrInternal
         }
         release {
             minifyEnabled false
+            signingConfig signingConfigs.mfrInternal
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
