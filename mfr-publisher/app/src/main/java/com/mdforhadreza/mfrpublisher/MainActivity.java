@@ -1,30 +1,41 @@
 package com.mdforhadreza.mfrpublisher;
 
 import android.app.Activity;
+import android.app.DownloadManager;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Insets;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.view.View;
 import android.view.WindowInsets;
 import android.webkit.CookieManager;
+import android.webkit.DownloadListener;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.Toast;
 
 public class MainActivity extends Activity {
-    private static final String PUBLISHER_URL = "https://mdforhadreza.com/mfr-publisher/?app=1.4";
+    private static final String PUBLISHER_URL = "https://mdforhadreza.com/mfr-publisher/?app=2.0";
     private static final int FILE_CHOOSER_REQUEST = 7301;
+    private static final String MOBILE_UA_SUFFIX = " MFRPublisherAndroid/2.0";
+    private static final String DESKTOP_UA =
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+            "(KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 MFRPublisherAndroid/2.0";
 
     private WebView webView;
     private ProgressBar progressBar;
     private ValueCallback<Uri[]> filePathCallback;
+    private String mobileUa;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,9 +92,10 @@ public class MainActivity extends Activity {
 
         if (savedInstanceState == null) {
             webView.clearCache(true);
-            webView.loadUrl(PUBLISHER_URL);
+            loadInCorrectMode(PUBLISHER_URL);
         } else {
             webView.restoreState(savedInstanceState);
+            applyModeForUrl(webView.getUrl());
         }
     }
 
@@ -95,9 +107,14 @@ public class MainActivity extends Activity {
         settings.setLoadsImagesAutomatically(true);
         settings.setAllowFileAccess(true);
         settings.setAllowContentAccess(true);
-        settings.setBuiltInZoomControls(false);
+        settings.setSupportZoom(true);
+        settings.setBuiltInZoomControls(true);
         settings.setDisplayZoomControls(false);
-        settings.setUserAgentString(settings.getUserAgentString() + " MFRPublisherAndroid/1.4");
+        settings.setJavaScriptCanOpenWindowsAutomatically(true);
+        settings.setSupportMultipleWindows(false);
+
+        mobileUa = settings.getUserAgentString() + MOBILE_UA_SUFFIX;
+        settings.setUserAgentString(mobileUa);
 
         CookieManager cookieManager = CookieManager.getInstance();
         cookieManager.setAcceptCookie(true);
@@ -105,27 +122,41 @@ public class MainActivity extends Activity {
 
         webView.setWebViewClient(new WebViewClient() {
             @Override
-            public boolean shouldOverrideUrlLoading(WebView view, android.webkit.WebResourceRequest request) {
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
-                if (uri != null && ("http".equals(uri.getScheme()) || "https".equals(uri.getScheme()))) {
-                    view.loadUrl(uri.toString());
+                if (uri == null) return false;
+
+                String scheme = uri.getScheme();
+                if ("http".equals(scheme) || "https".equals(scheme)) {
+                    String host = uri.getHost();
+                    if (host != null && host.endsWith("mdforhadreza.com")) {
+                        loadInCorrectMode(uri.toString());
+                        return true;
+                    }
+                    startActivity(new Intent(Intent.ACTION_VIEW, uri));
                     return true;
                 }
-                return false;
+
+                try {
+                    startActivity(new Intent(Intent.ACTION_VIEW, uri));
+                } catch (Exception ignored) {}
+                return true;
             }
 
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
-                String cleanup =
-                        "(function(){"
-                      + "document.documentElement.style.setProperty('margin-top','0px','important');"
-                      + "document.body&&document.body.style.setProperty('margin-top','0px','important');"
-                      + "var a=document.getElementById('wpadminbar');if(a){a.remove();}"
-                      + "if(document.body){var n=[].slice.call(document.body.childNodes);"
-                      + "n.forEach(function(x){if(x.nodeType===3&&/^\\s*(\\\\n\\s*)+$/.test(x.nodeValue||'')){x.remove();}});}"
-                      + "})();";
-                view.evaluateJavascript(cleanup, null);
+                applyModeForUrl(url);
+
+                if (!isWordPressAdmin(url)) {
+                    String cleanup =
+                            "(function(){"
+                          + "document.documentElement.style.setProperty('margin-top','0px','important');"
+                          + "document.body&&document.body.style.setProperty('margin-top','0px','important');"
+                          + "var a=document.getElementById('wpadminbar');if(a){a.remove();}"
+                          + "})();";
+                    view.evaluateJavascript(cleanup, null);
+                }
             }
         });
 
@@ -152,7 +183,7 @@ public class MainActivity extends Activity {
                 } catch (Exception e) {
                     intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
                     intent.addCategory(Intent.CATEGORY_OPENABLE);
-                    intent.setType("image/*");
+                    intent.setType("*/*");
                     intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
                 }
 
@@ -168,6 +199,58 @@ public class MainActivity extends Activity {
                 }
             }
         });
+
+        webView.setDownloadListener(new DownloadListener() {
+            @Override
+            public void onDownloadStart(String url, String userAgent, String contentDisposition,
+                                        String mimetype, long contentLength) {
+                try {
+                    DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+                    request.setMimeType(mimetype);
+                    request.addRequestHeader("User-Agent", userAgent);
+                    String cookies = CookieManager.getInstance().getCookie(url);
+                    if (cookies != null) request.addRequestHeader("Cookie", cookies);
+                    request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                    request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "mfr-download");
+                    DownloadManager dm = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+                    dm.enqueue(request);
+                    Toast.makeText(MainActivity.this, "Download started", Toast.LENGTH_SHORT).show();
+                } catch (Exception e) {
+                    startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+                }
+            }
+        });
+    }
+
+    private boolean isWordPressAdmin(String url) {
+        if (url == null) return false;
+        return url.contains("/wp-admin/") || url.contains("/wp-login.php");
+    }
+
+    private void applyModeForUrl(String url) {
+        WebSettings settings = webView.getSettings();
+        boolean desktop = isWordPressAdmin(url);
+
+        if (desktop) {
+            if (!DESKTOP_UA.equals(settings.getUserAgentString())) {
+                settings.setUserAgentString(DESKTOP_UA);
+            }
+            settings.setUseWideViewPort(true);
+            settings.setLoadWithOverviewMode(true);
+            webView.setInitialScale(0);
+        } else {
+            if (mobileUa != null && !mobileUa.equals(settings.getUserAgentString())) {
+                settings.setUserAgentString(mobileUa);
+            }
+            settings.setUseWideViewPort(false);
+            settings.setLoadWithOverviewMode(false);
+            webView.setInitialScale(0);
+        }
+    }
+
+    private void loadInCorrectMode(String url) {
+        applyModeForUrl(url);
+        webView.loadUrl(url);
     }
 
     @Override
@@ -180,7 +263,9 @@ public class MainActivity extends Activity {
             if (data.getClipData() != null) {
                 int count = data.getClipData().getItemCount();
                 result = new Uri[count];
-                for (int i = 0; i < count; i++) result[i] = data.getClipData().getItemAt(i).getUri();
+                for (int i = 0; i < count; i++) {
+                    result[i] = data.getClipData().getItemAt(i).getUri();
+                }
             } else if (data.getData() != null) {
                 result = new Uri[]{data.getData()};
             }
@@ -192,8 +277,11 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        if (webView != null && webView.canGoBack()) webView.goBack();
-        else super.onBackPressed();
+        if (webView != null && webView.canGoBack()) {
+            webView.goBack();
+        } else {
+            super.onBackPressed();
+        }
     }
 
     @Override
