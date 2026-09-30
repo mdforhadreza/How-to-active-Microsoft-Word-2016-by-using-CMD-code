@@ -61,11 +61,11 @@ jobs:
           "$APKSIGNER" verify --verbose app/build/outputs/apk/debug/app-debug.apk
 
       - name: Copy named APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk MFR-Publisher-v2.1.apk
+        run: cp app/build/outputs/apk/debug/app-debug.apk MFR-Publisher-v2.2.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: MFR-Publisher-v2.1-APK
-          path: mfr-publisher/MFR-Publisher-v2.1.apk
+          name: MFR-Publisher-v2.2-APK
+          path: mfr-publisher/MFR-Publisher-v2.2.apk
           if-no-files-found: error
